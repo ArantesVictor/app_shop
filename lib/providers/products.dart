@@ -1,12 +1,13 @@
 import 'dart:convert';
+import '../utils/constants.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
+import 'package:shop/exceptions/http_exceptions.dart';
 import './product.dart';
 
 class Products with ChangeNotifier {
-  final _baseUrl =
-      'https://flutter-cod3r-6cd74-default-rtdb.firebaseio.com/products';
+  final _baseUrl = '${Constants.BASE_API_URL}/products';
   List<Product> _items = [];
 
   List<Product> get items => [..._items];
@@ -90,11 +91,20 @@ class Products with ChangeNotifier {
     }
   }
 
-  void deleteProduct(String id) {
+  Future<void> deleteProduct(String id) async {
     final index = _items.indexWhere((prod) => prod.id == id);
     if (index >= 0) {
-      _items.removeWhere((prod) => prod.id == id);
+      final product = _items[index];
+      _items.remove(product);
       notifyListeners();
+
+      final response = await http.delete('$_baseUrl/${product.id}.json');
+
+      if (response.statusCode >= 400) {
+        _items.insert(index, product);
+        notifyListeners();
+        throw HttpExceptions('Ocorreu um erro na exclusão do produto');
+      }
     }
   }
 }
