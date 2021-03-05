@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop/exceptions/auth_exception.dart';
+import '../providers/auth.dart';
 
 enum AuthMode {
   Singup,
@@ -20,7 +23,25 @@ class _AuthCardState extends State<AuthCard> {
     'password': '',
   };
 
-  void _submit() {
+  void _showErrorDialog(String msg) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Ocorreu um erro'),
+        content: Text(msg),
+        actions: <Widget>[
+          FlatButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
     if (!_form.currentState.validate()) {
       return;
     }
@@ -31,10 +52,24 @@ class _AuthCardState extends State<AuthCard> {
 
     _form.currentState.save();
 
-    if (_authMode == AuthMode.Login) {
-      //logica login
-    } else {
-      //logica Registro
+    Auth auth = Provider.of(context, listen: false);
+
+    try {
+      if (_authMode == AuthMode.Login) {
+        await auth.login(
+          _authData['email'],
+          _authData['password'],
+        );
+      } else {
+        await auth.sigup(
+          _authData['email'],
+          _authData['password'],
+        );
+      }
+    } on AuthExceptions catch (error) {
+      _showErrorDialog(error.toString());
+    } catch (error) {
+      _showErrorDialog('Ocorreu um erro inesperado');
     }
 
     setState(() {
@@ -87,7 +122,7 @@ class _AuthCardState extends State<AuthCard> {
                 controller: _passwordController,
                 obscureText: true,
                 validator: (value) {
-                  if (value.isEmpty || value.length >= 5) {
+                  if (value.isEmpty || value.length <= 5) {
                     return 'Informe um senha valida';
                   }
 

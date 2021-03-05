@@ -25,16 +25,15 @@ class Product with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggFavorite() async {
+  Future<void> toggFavorite(String token, String userId) async {
     _toggFavorite();
     try {
-      final url = '${Constants.BASE_API_URL}/products/$id.json';
+      final url =
+          '${Constants.BASE_API_URL}/userFavorites/$userId/$id.json?auth=$token';
 
-      final response = await http.patch(
+      final response = await http.put(
         url,
-        body: jsonEncode({
-          'isFavorite': isFavorite,
-        }),
+        body: jsonEncode(isFavorite),
       );
 
       if (response.statusCode >= 400) {
